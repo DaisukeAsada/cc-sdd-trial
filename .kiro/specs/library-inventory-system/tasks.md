@@ -8,7 +8,7 @@
   - モジュラーモノリス構造のディレクトリ作成（Book, Loan, User, Reservation, Report の5ドメイン）
   - _Requirements: 1.5, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1_
 
-- [ ] 1.2 データベーススキーマとマイグレーション基盤
+- [x] 1.2 データベーススキーマとマイグレーション基盤
   - PostgreSQL 接続設定とコネクションプール構築
   - Book、BookCopy、User、Loan、Reservation、OverdueRecord テーブルのマイグレーション作成
   - ISBN ユニーク制約、外部キー制約の設定

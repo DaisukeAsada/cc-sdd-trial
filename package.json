@@ -19,7 +19,11 @@
     "type": "git",
     "url": "git+https://github.com/DaisukeAsada/cc-sdd-trial.git"
   },
-  "keywords": ["library", "inventory", "management"],
+  "keywords": [
+    "library",
+    "inventory",
+    "management"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -30,6 +34,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.2",
+    "@types/pg": "^8.15.6",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
     "eslint": "^9.39.1",
@@ -40,5 +45,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.15"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   }
 }
