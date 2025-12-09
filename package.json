@@ -1,0 +1,44 @@
+{
+  "name": "cc-sdd-trial",
+  "version": "1.0.0",
+  "description": "図書館蔵書管理システム",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DaisukeAsada/cc-sdd-trial.git"
+  },
+  "keywords": ["library", "inventory", "management"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DaisukeAsada/cc-sdd-trial/issues"
+  },
+  "homepage": "https://github.com/DaisukeAsada/cc-sdd-trial#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "express": "^5.2.1",
+    "prettier": "^3.7.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  }
+}

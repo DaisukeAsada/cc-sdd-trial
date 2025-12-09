@@ -1,7 +1,7 @@
 # Implementation Plan
 
 ## Task 1: プロジェクト基盤セットアップ
-- [ ] 1.1 開発環境とプロジェクト構造の初期化
+- [x] 1.1 開発環境とプロジェクト構造の初期化
   - Node.js プロジェクトの初期化と TypeScript 設定
   - ESLint、Prettier による開発ツールチェーン構築
   - Docker Compose による PostgreSQL、Redis のローカル環境構築
