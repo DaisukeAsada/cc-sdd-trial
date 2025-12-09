@@ -15,10 +15,10 @@
   - 全文検索用 GIN インデックスの設定（タイトル、著者）
   - _Requirements: 1.5, 2.1, 3.1, 4.1, 5.4, 6.1, 7.1_
 
-- [ ] 1.3 共通基盤モジュールの実装
-  - Branded Types（BookId, UserId, LoanId, ReservationId, CopyId）の定義
-  - Result<T, E> パターンによるエラーハンドリングユーティリティ
-  - 共通バリデーション機能（ISBN形式、必須項目チェック）
+- [x] 1.3 共通基盤モジュールの実装
+  - [x] Branded Types（BookId, UserId, LoanId, ReservationId, CopyId）の定義
+  - [x] Result<T, E> パターンによるエラーハンドリングユーティリティ
+  - [x] 共通バリデーション機能（ISBN形式、必須項目チェック）
   - _Requirements: 1.4, 5.5_
 
 ## Task 2: 蔵書管理機能（Book ドメイン）
