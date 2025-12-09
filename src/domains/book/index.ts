@@ -17,3 +17,6 @@ export type { BookRepository } from './book-repository.js';
 // サービス
 export type { BookService } from './book-service.js';
 export { createBookService } from './book-service.js';
+
+// コントローラー
+export { createBookController } from './book-controller.js';

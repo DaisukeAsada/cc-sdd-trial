@@ -36,7 +36,7 @@
   - 書籍マスタに紐づく蔵書コピー一覧取得
   - _Requirements: 1.1, 1.5, 3.5_
 
-- [ ] 2.3 蔵書管理 REST API エンドポイント
+- [x] 2.3 蔵書管理 REST API エンドポイント
   - POST /api/books - 書籍登録
   - PUT /api/books/:id - 書籍編集
   - DELETE /api/books/:id - 書籍削除
