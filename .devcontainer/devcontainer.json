@@ -3,7 +3,7 @@
 {
 	"name": "cc-sdd-trial",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/javascript-node:24",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:24",
 	"customizations": {
 		"vscode": {
 			"extensions": [
