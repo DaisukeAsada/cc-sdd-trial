@@ -12,19 +12,35 @@
 
 ## Core Technologies
 
+### Backend
 - **Language**: TypeScript 5.x（strict mode）
 - **Runtime**: Node.js 20+
 - **Framework**: Express 5.x
 - **Database**: PostgreSQL（pg ライブラリ）
 - **Message Queue**: Redis + BullMQ（非同期ジョブ処理）
 
+### Frontend
+- **Language**: TypeScript 5.x（strict mode）
+- **Framework**: React 19
+- **Bundler**: Vite 7.x
+- **Routing**: React Router 7.x
+- **Data Fetching**: TanStack Query 5.x
+
 ## Key Libraries
 
+### Backend
 - **pg**: PostgreSQL クライアント
 - **express**: Web フレームワーク
 - **bullmq**: ジョブキュー（Redis ベース）
 - **ioredis**: Redis クライアント
-- **vitest**: テストフレームワーク
+
+### Frontend
+- **react-router-dom**: クライアントサイドルーティング
+- **@tanstack/react-query**: サーバー状態管理
+- **@testing-library/react**: コンポーネントテスト
+
+### Shared
+- **vitest**: テストフレームワーク（バックエンド・フロントエンド共通）
 - **eslint + prettier**: コード品質・フォーマット
 
 ## Development Standards
@@ -72,4 +88,4 @@
 
 ---
 _Document standards and patterns, not every dependency_
-_Updated: 2025-12-10 - Added BullMQ/Redis job queue pattern_
+_Updated: 2025-12-10 - Added frontend stack (React 19, Vite, TanStack Query)_

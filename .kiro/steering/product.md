@@ -24,7 +24,8 @@
 - **型安全性**: TypeScript + Branded Types でコンパイル時エラー検出
 - **Result パターン**: 例外を使わない明示的なエラーハンドリング
 - **テスタビリティ**: 依存性注入による高いテスト容易性
+- **フルスタック**: React SPA + Express API のモノレポ構成
 
 ---
 _Focus on patterns and purpose, not exhaustive feature lists_
-_Updated: 2025-12-10 - Added notification domain capability_
+_Updated: 2025-12-10 - Added frontend SPA capability_

@@ -8,6 +8,11 @@
 
 ## Directory Patterns
 
+### モノレポ構成
+- `src/` - バックエンド（Express API）
+- `client/` - フロントエンド（React SPA）
+- ルートに共通設定（eslint, tsconfig, docker-compose）
+
 ### ドメイン層 (`src/domains/<domain>/`)
 **Purpose**: ビジネスロジックを含むドメインモジュール  
 **Files**:
@@ -35,6 +40,23 @@
 - `validation.ts` - バリデーション関数
 
 **Example**: `src/shared/result.ts`
+
+### フロントエンド (`client/src/`)
+**Purpose**: React SPA アプリケーション  
+**Directories**:
+- `components/` - 再利用可能なUIコンポーネント
+- `pages/` - ルートに対応するページコンポーネント
+- `routes/` - React Router ルーティング設定
+- `contexts/` - React Context（認証など）
+- `lib/` - ユーティリティ（APIクライアント等）
+- `test/` - テスト設定
+
+**Files**:
+- `*.tsx` - React コンポーネント
+- `*.test.tsx` - コンポーネントテスト（同階層配置）
+- `index.ts` - バレルエクスポート
+
+**Example**: `client/src/components/DataTable.tsx`
 
 ## Naming Conventions
 
@@ -76,3 +98,4 @@ import type { CreateBookInput } from './types.js';
 
 ---
 _Document patterns, not file trees. New files following patterns shouldn't require updates_
+_Updated: 2025-12-10 - Added monorepo structure and frontend patterns_
