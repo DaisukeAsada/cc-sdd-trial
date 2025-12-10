@@ -511,4 +511,161 @@ describe('LoanService', () => {
       });
     });
   });
+
+  // ============================================
+  // Task 6.1: 返却処理サービスの実装
+  // ============================================
+
+  describe('returnBook', () => {
+    describe('正常系', () => {
+      it('貸出IDで返却処理を行い、返却結果を返す', async () => {
+        // Arrange
+        const activeLoan: Loan = {
+          ...testLoan,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...testLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.loan.id).toBe(testLoanId);
+          expect(result.value.loan.returnedAt).not.toBeNull();
+        }
+      });
+
+      it('返却処理で貸出記録に返却日が記録される', async () => {
+        // Arrange
+        const activeLoan: Loan = {
+          ...testLoan,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...testLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+
+        // Act
+        await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(mockLoanRepository.updateReturnedAt).toHaveBeenCalledWith(
+          testLoanId,
+          expect.any(Date)
+        );
+      });
+
+      it('返却処理で蔵書状態がAVAILABLEに更新される', async () => {
+        // Arrange
+        const activeLoan: Loan = {
+          ...testLoan,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...testLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+
+        // Act
+        await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(mockBookRepository.updateCopy).toHaveBeenCalledWith(testCopyId, 'AVAILABLE');
+      });
+
+      it('返却期限内の返却では isOverdue が false になる', async () => {
+        // Arrange
+        const today = new Date();
+        const futureDate = new Date(today);
+        futureDate.setDate(futureDate.getDate() + 7); // 7日後が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: futureDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: today,
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.isOverdue).toBe(false);
+          expect(result.value.overdueDays).toBeUndefined();
+        }
+      });
+    });
+
+    describe('異常系', () => {
+      it('存在しない貸出IDの場合エラーを返す', async () => {
+        // Arrange
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(
+          err({ type: 'LOAN_NOT_FOUND', loanId: testLoanId })
+        );
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isErr(result)).toBe(true);
+        if (isErr(result)) {
+          expect(result.error.type).toBe('LOAN_NOT_FOUND');
+        }
+      });
+
+      it('既に返却済みの貸出の場合エラーを返す', async () => {
+        // Arrange
+        const alreadyReturnedLoan: Loan = {
+          ...testLoan,
+          returnedAt: new Date('2024-06-10'),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(alreadyReturnedLoan));
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isErr(result)).toBe(true);
+        if (isErr(result)) {
+          expect(result.error.type).toBe('ALREADY_RETURNED');
+        }
+      });
+    });
+  });
 });

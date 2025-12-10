@@ -45,6 +45,8 @@ function getErrorStatusCode(error: LoanError): number {
       return 409;
     case 'LOAN_LIMIT_EXCEEDED':
       return 409;
+    case 'ALREADY_RETURNED':
+      return 409;
   }
 }
 

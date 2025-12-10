@@ -10,7 +10,14 @@ import type { CopyId, LoanId } from '../../shared/branded-types.js';
 import type { LoanRepository } from './loan-repository.js';
 import type { BookRepository } from '../book/book-repository.js';
 import type { UserRepository } from '../user/user-repository.js';
-import type { Loan, CreateLoanInput, LoanError, LoanReceipt, CopyLoanStatus } from './types.js';
+import type {
+  Loan,
+  CreateLoanInput,
+  LoanError,
+  LoanReceipt,
+  CopyLoanStatus,
+  ReturnResult,
+} from './types.js';
 import { DEFAULT_LOAN_DURATION_DAYS } from './types.js';
 
 // ============================================
@@ -55,6 +62,13 @@ export interface LoanService {
    * @returns 貸出またはエラー
    */
   getLoanById(id: LoanId): Promise<Result<Loan, LoanError>>;
+
+  /**
+   * 書籍を返却
+   * @param loanId - 貸出ID
+   * @returns 返却結果（延滞情報を含む）またはエラー
+   */
+  returnBook(loanId: LoanId): Promise<Result<ReturnResult, LoanError>>;
 }
 
 // ============================================
@@ -277,6 +291,58 @@ export function createLoanService(
 
     async getLoanById(id: LoanId): Promise<Result<Loan, LoanError>> {
       return await loanRepository.findById(id);
+    },
+
+    async returnBook(loanId: LoanId): Promise<Result<ReturnResult, LoanError>> {
+      // 1. 貸出記録の取得
+      const loanResult = await loanRepository.findById(loanId);
+      if (isErr(loanResult)) {
+        return loanResult;
+      }
+      const loan = loanResult.value;
+
+      // 2. 既に返却済みかチェック
+      if (loan.returnedAt !== null) {
+        return err({
+          type: 'ALREADY_RETURNED',
+          loanId: loanId,
+        });
+      }
+
+      // 3. 返却日を記録
+      const now = new Date();
+      const updateResult = await loanRepository.updateReturnedAt(loanId, now);
+      if (isErr(updateResult)) {
+        return updateResult;
+      }
+
+      // 4. 蔵書コピーの状態を「AVAILABLE」に更新
+      const copyUpdateResult = await bookRepository.updateCopy(loan.bookCopyId, 'AVAILABLE');
+      if (isErr(copyUpdateResult)) {
+        return err({
+          type: 'VALIDATION_ERROR',
+          field: 'bookCopy',
+          message: '蔵書状態の更新に失敗しました',
+        });
+      }
+
+      // 5. 延滞判定
+      const isOverdue = now > loan.dueDate;
+
+      if (isOverdue) {
+        const timeDiff = now.getTime() - loan.dueDate.getTime();
+        const overdueDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        return ok({
+          loan: updateResult.value,
+          isOverdue,
+          overdueDays,
+        });
+      }
+
+      return ok({
+        loan: updateResult.value,
+        isOverdue,
+      });
     },
   };
 }

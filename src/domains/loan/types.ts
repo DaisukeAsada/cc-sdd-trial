@@ -45,6 +45,17 @@ export interface LoanReceipt {
 }
 
 // ============================================
+// 返却結果
+// ============================================
+
+/** 返却結果 */
+export interface ReturnResult {
+  readonly loan: Loan;
+  readonly isOverdue: boolean;
+  readonly overdueDays?: number;
+}
+
+// ============================================
 // 貸出状況型定義
 // ============================================
 
@@ -74,4 +85,5 @@ export type LoanError =
     }
   | { readonly type: 'USER_NOT_FOUND'; readonly userId: string }
   | { readonly type: 'COPY_NOT_FOUND'; readonly copyId: string }
-  | { readonly type: 'LOAN_NOT_FOUND'; readonly loanId: string };
+  | { readonly type: 'LOAN_NOT_FOUND'; readonly loanId: string }
+  | { readonly type: 'ALREADY_RETURNED'; readonly loanId: string };

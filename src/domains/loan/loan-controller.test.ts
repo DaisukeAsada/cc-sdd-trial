@@ -28,6 +28,7 @@ function createMockLoanService(): LoanService {
     getCopyLoanStatus: vi.fn(),
     getBulkCopyLoanStatus: vi.fn(),
     getLoanById: vi.fn(),
+    returnBook: vi.fn(),
   };
 }
 
