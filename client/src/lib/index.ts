@@ -40,3 +40,12 @@ export {
   type UserSearchCriteria,
   type UserApiError,
 } from './user-api';
+export {
+  createReservation,
+  cancelReservation,
+  getUserReservations,
+  type Reservation,
+  type ReservationStatus,
+  type CreateReservationInput,
+  type ReservationApiError,
+} from './reservation-api';
