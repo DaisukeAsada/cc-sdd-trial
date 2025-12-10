@@ -49,3 +49,17 @@ export {
   type CreateReservationInput,
   type ReservationApiError,
 } from './reservation-api';
+export {
+  getStatisticsSummary,
+  getPopularBooksRanking,
+  getCategoryStatistics,
+  exportToCsv,
+  downloadCsv,
+  type DateRange,
+  type StatisticsSummary,
+  type PopularBookItem,
+  type PopularBooksRanking,
+  type CategoryStatisticsItem,
+  type CategoryStatistics,
+  type ReportApiError,
+} from './report-api';
