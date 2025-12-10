@@ -35,6 +35,9 @@ export type ReservationId = Brand<string, 'ReservationId'>;
 /** 蔵書コピーID */
 export type CopyId = Brand<string, 'CopyId'>;
 
+/** 延滞記録ID */
+export type OverdueRecordId = Brand<string, 'OverdueRecordId'>;
+
 // ============================================
 // ファクトリ関数
 // ============================================
@@ -102,4 +105,17 @@ export function createCopyId(value: string): CopyId {
     throw new Error('CopyId cannot be empty');
   }
   return value as CopyId;
+}
+
+/**
+ * OverdueRecordIdを作成
+ * @param value - ID文字列
+ * @returns OverdueRecordId
+ * @throws Error - 空文字列の場合
+ */
+export function createOverdueRecordId(value: string): OverdueRecordId {
+  if (!value || value.trim() === '') {
+    throw new Error('OverdueRecordId cannot be empty');
+  }
+  return value as OverdueRecordId;
 }

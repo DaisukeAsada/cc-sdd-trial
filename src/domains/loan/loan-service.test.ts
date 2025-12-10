@@ -16,9 +16,11 @@ import {
   createBookId,
 } from '../../shared/branded-types.js';
 import { ok, err, isOk, isErr } from '../../shared/result.js';
-import type { Loan, CreateLoanInput } from './types.js';
+import type { Loan, CreateLoanInput, OverdueRecord } from './types.js';
 import type { User } from '../user/types.js';
 import type { BookCopy, Book } from '../book/types.js';
+import type { OverdueRecordRepository } from './overdue-record-repository.js';
+import { createOverdueRecordId } from '../../shared/branded-types.js';
 
 // ============================================
 // モックファクトリ
@@ -50,6 +52,15 @@ function createMockBookRepository(): Pick<
 function createMockUserRepository(): Pick<UserRepository, 'findById'> {
   return {
     findById: vi.fn(),
+  };
+}
+
+function createMockOverdueRecordRepository(): OverdueRecordRepository {
+  return {
+    create: vi.fn(),
+    findById: vi.fn(),
+    findByLoanId: vi.fn(),
+    findByUserId: vi.fn(),
   };
 }
 
@@ -101,6 +112,15 @@ const testLoan: Loan = {
   returnedAt: null,
 };
 
+const testOverdueRecordId = createOverdueRecordId('overdue-001');
+
+const testOverdueRecord: OverdueRecord = {
+  id: testOverdueRecordId,
+  loanId: testLoanId,
+  overdueDays: 3,
+  recordedAt: new Date('2024-06-18'),
+};
+
 // ============================================
 // テスト
 // ============================================
@@ -110,12 +130,19 @@ describe('LoanService', () => {
   let mockLoanRepository: ReturnType<typeof createMockLoanRepository>;
   let mockBookRepository: ReturnType<typeof createMockBookRepository>;
   let mockUserRepository: ReturnType<typeof createMockUserRepository>;
+  let mockOverdueRecordRepository: ReturnType<typeof createMockOverdueRecordRepository>;
 
   beforeEach(() => {
     mockLoanRepository = createMockLoanRepository();
     mockBookRepository = createMockBookRepository();
     mockUserRepository = createMockUserRepository();
-    loanService = createLoanService(mockLoanRepository, mockBookRepository, mockUserRepository);
+    mockOverdueRecordRepository = createMockOverdueRecordRepository();
+    loanService = createLoanService(
+      mockLoanRepository,
+      mockBookRepository,
+      mockUserRepository,
+      mockOverdueRecordRepository
+    );
   });
 
   describe('createLoan', () => {
@@ -519,13 +546,17 @@ describe('LoanService', () => {
   describe('returnBook', () => {
     describe('正常系', () => {
       it('貸出IDで返却処理を行い、返却結果を返す', async () => {
-        // Arrange
+        // Arrange（期限内返却のシナリオ）
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 7); // 7日後が期限
+
         const activeLoan: Loan = {
           ...testLoan,
+          dueDate: futureDate,
           returnedAt: null,
         };
         const returnedLoan: Loan = {
-          ...testLoan,
+          ...activeLoan,
           returnedAt: new Date(),
         };
 
@@ -547,13 +578,17 @@ describe('LoanService', () => {
       });
 
       it('返却処理で貸出記録に返却日が記録される', async () => {
-        // Arrange
+        // Arrange（期限内返却のシナリオ）
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 7);
+
         const activeLoan: Loan = {
           ...testLoan,
+          dueDate: futureDate,
           returnedAt: null,
         };
         const returnedLoan: Loan = {
-          ...testLoan,
+          ...activeLoan,
           returnedAt: new Date(),
         };
 
@@ -574,13 +609,17 @@ describe('LoanService', () => {
       });
 
       it('返却処理で蔵書状態がAVAILABLEに更新される', async () => {
-        // Arrange
+        // Arrange（期限内返却のシナリオ）
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 7);
+
         const activeLoan: Loan = {
           ...testLoan,
+          dueDate: futureDate,
           returnedAt: null,
         };
         const returnedLoan: Loan = {
-          ...testLoan,
+          ...activeLoan,
           returnedAt: new Date(),
         };
 
@@ -664,6 +703,225 @@ describe('LoanService', () => {
         expect(isErr(result)).toBe(true);
         if (isErr(result)) {
           expect(result.error.type).toBe('ALREADY_RETURNED');
+        }
+      });
+    });
+
+    // ============================================
+    // Task 6.2: 延滞判定と記録機能
+    // ============================================
+
+    describe('延滞判定', () => {
+      it('返却期限超過の場合 isOverdue が true になる', async () => {
+        // Arrange
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 5); // 5日前が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: pastDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+        vi.mocked(mockOverdueRecordRepository.create).mockResolvedValue(ok(testOverdueRecord));
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.isOverdue).toBe(true);
+        }
+      });
+
+      it('延滞日数が正確に計算される', async () => {
+        // Arrange
+        // 固定日時を使用して延滞日数を計算
+        const fixedNow = new Date('2024-06-18T12:00:00Z');
+        vi.useFakeTimers();
+        vi.setSystemTime(fixedNow);
+
+        const dueDate = new Date('2024-06-15T12:00:00Z'); // 3日前が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: dueDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: fixedNow,
+        };
+
+        const expectedOverdueRecord: OverdueRecord = {
+          ...testOverdueRecord,
+          overdueDays: 3,
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+        vi.mocked(mockOverdueRecordRepository.create).mockResolvedValue(ok(expectedOverdueRecord));
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Restore real timers
+        vi.useRealTimers();
+
+        // Assert
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.overdueDays).toBe(3);
+        }
+      });
+    });
+
+    describe('延滞記録保存', () => {
+      it('延滞時に延滞記録が作成される', async () => {
+        // Arrange
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 3); // 3日前が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: pastDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+        vi.mocked(mockOverdueRecordRepository.create).mockResolvedValue(ok(testOverdueRecord));
+
+        // Act
+        await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(mockOverdueRecordRepository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            loanId: testLoanId,
+            overdueDays: expect.any(Number),
+          })
+        );
+      });
+
+      it('延滞記録が返却結果に含まれる', async () => {
+        // Arrange
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 3); // 3日前が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: pastDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+        vi.mocked(mockOverdueRecordRepository.create).mockResolvedValue(ok(testOverdueRecord));
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.overdueRecord).toBeDefined();
+          expect(result.value.overdueRecord?.loanId).toBe(testLoanId);
+          expect(result.value.overdueRecord?.overdueDays).toBe(3);
+        }
+      });
+
+      it('期限内返却では延滞記録が作成されない', async () => {
+        // Arrange
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 7); // 7日後が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: futureDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(mockOverdueRecordRepository.create).not.toHaveBeenCalled();
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.overdueRecord).toBeUndefined();
+        }
+      });
+
+      it('延滞記録保存に失敗しても返却処理は成功する', async () => {
+        // Arrange
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 3); // 3日前が期限
+
+        const activeLoan: Loan = {
+          ...testLoan,
+          dueDate: pastDate,
+          returnedAt: null,
+        };
+        const returnedLoan: Loan = {
+          ...activeLoan,
+          returnedAt: new Date(),
+        };
+
+        vi.mocked(mockLoanRepository.findById).mockResolvedValue(ok(activeLoan));
+        vi.mocked(mockLoanRepository.updateReturnedAt).mockResolvedValue(ok(returnedLoan));
+        vi.mocked(mockBookRepository.updateCopy).mockResolvedValue(
+          ok({ ...testBookCopy, status: 'AVAILABLE' })
+        );
+        vi.mocked(mockOverdueRecordRepository.create).mockResolvedValue(
+          err({ type: 'DATABASE_ERROR', message: 'DB error' })
+        );
+
+        // Act
+        const result = await loanService.returnBook(testLoanId);
+
+        // Assert
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.isOverdue).toBe(true);
+          expect(result.value.overdueRecord).toBeUndefined();
         }
       });
     });

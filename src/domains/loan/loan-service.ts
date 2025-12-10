@@ -17,8 +17,10 @@ import type {
   LoanReceipt,
   CopyLoanStatus,
   ReturnResult,
+  CreateOverdueRecordInput,
 } from './types.js';
 import { DEFAULT_LOAN_DURATION_DAYS } from './types.js';
+import type { OverdueRecordRepository } from './overdue-record-repository.js';
 
 // ============================================
 // サービスインターフェース
@@ -79,7 +81,8 @@ export interface LoanService {
 export function createLoanService(
   loanRepository: LoanRepository,
   bookRepository: Pick<BookRepository, 'findCopyById' | 'updateCopy' | 'findById'>,
-  userRepository: Pick<UserRepository, 'findById'>
+  userRepository: Pick<UserRepository, 'findById'>,
+  overdueRecordRepository: OverdueRecordRepository
 ): LoanService {
   return {
     async createLoan(input: CreateLoanInput): Promise<Result<Loan, LoanError>> {
@@ -332,10 +335,28 @@ export function createLoanService(
       if (isOverdue) {
         const timeDiff = now.getTime() - loan.dueDate.getTime();
         const overdueDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+        // 6. 延滞記録を作成（失敗しても返却処理は成功とする）
+        const overdueInput: CreateOverdueRecordInput = {
+          loanId: loanId,
+          overdueDays: overdueDays,
+        };
+        const overdueRecordResult = await overdueRecordRepository.create(overdueInput);
+
+        if (isErr(overdueRecordResult)) {
+          // 延滞記録保存に失敗しても返却処理は成功
+          return ok({
+            loan: updateResult.value,
+            isOverdue,
+            overdueDays,
+          });
+        }
+
         return ok({
           loan: updateResult.value,
           isOverdue,
           overdueDays,
+          overdueRecord: overdueRecordResult.value,
         });
       }
 

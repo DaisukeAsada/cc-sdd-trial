@@ -53,6 +53,28 @@ export interface ReturnResult {
   readonly loan: Loan;
   readonly isOverdue: boolean;
   readonly overdueDays?: number;
+  readonly overdueRecord?: OverdueRecord;
+}
+
+// ============================================
+// 延滞記録型定義
+// ============================================
+
+/** 延滞記録ID */
+import type { OverdueRecordId } from '../../shared/branded-types.js';
+
+/** 延滞記録 */
+export interface OverdueRecord {
+  readonly id: OverdueRecordId;
+  readonly loanId: LoanId;
+  readonly overdueDays: number;
+  readonly recordedAt: Date;
+}
+
+/** 延滞記録作成入力 */
+export interface CreateOverdueRecordInput {
+  readonly loanId: LoanId;
+  readonly overdueDays: number;
 }
 
 // ============================================
