@@ -18,3 +18,13 @@ export {
   type SearchSortBy,
   type SearchSortOrder,
 } from './search-api';
+export {
+  createLoan,
+  getLoan,
+  returnBook,
+  type Loan,
+  type LoanReceipt,
+  type ReturnResult,
+  type CreateLoanInput,
+  type LoanApiError,
+} from './loan-api';
