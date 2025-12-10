@@ -208,7 +208,7 @@ export function createRedisSessionStore(config: SessionStoreConfig): SessionStor
   const { redisUrl, keyPrefix = DEFAULT_SESSION_KEY_PREFIX } = config;
 
   // 動的インポートを使用してioredisを遅延ロード
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+
   let redisClient: import('ioredis').Redis | null = null;
 
   const getClient = async (): Promise<import('ioredis').Redis> => {

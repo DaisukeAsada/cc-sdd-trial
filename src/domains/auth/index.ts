@@ -32,3 +32,25 @@ export { createAuthService } from './auth-service.js';
 
 // コントローラー
 export { createAuthController } from './auth-controller.js';
+
+// RBAC (Role-Based Access Control)
+export type {
+  AuthenticatedRequest,
+  HttpMethod,
+  EndpointRoleConfig,
+  RoleConfig,
+  ForbiddenError,
+  UnauthorizedError,
+} from './rbac.js';
+
+export {
+  hasRole,
+  canAccessEndpoint,
+  createRoleGuard,
+  createSessionMiddleware,
+  requireAuth,
+  requireLibrarian,
+  requireAdmin,
+  requirePatron,
+  DEFAULT_ROLE_CONFIG,
+} from './rbac.js';
