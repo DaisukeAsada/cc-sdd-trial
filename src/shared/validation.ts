@@ -15,7 +15,8 @@ import { Result, ok, err } from './result.js';
 /** バリデーションエラー型 */
 export type ValidationError =
   | { type: 'INVALID_ISBN'; message: string }
-  | { type: 'REQUIRED_FIELD_MISSING'; field: string; message: string };
+  | { type: 'REQUIRED_FIELD_MISSING'; field: string; message: string }
+  | { type: 'INVALID_EMAIL'; message: string };
 
 // ============================================
 // ISBN バリデーション
@@ -138,4 +139,29 @@ export function validateRequired(
     });
   }
   return ok(value);
+}
+
+// ============================================
+// メールアドレスバリデーション
+// ============================================
+
+/**
+ * メールアドレス形式を検証
+ * @param email - 検証対象のメールアドレス
+ * @returns Result<string, ValidationError>
+ */
+export function validateEmail(
+  email: string
+): Result<string, ValidationError> {
+  // 基本的なメール形式の正規表現
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    return err({
+      type: 'INVALID_EMAIL',
+      message: 'Invalid email format',
+    });
+  }
+
+  return ok(email);
 }
