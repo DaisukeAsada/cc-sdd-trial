@@ -28,3 +28,15 @@ export {
   type CreateLoanInput,
   type LoanApiError,
 } from './loan-api';
+export {
+  createUser,
+  getUser,
+  searchUsers,
+  getUserLoans,
+  type User,
+  type UserWithLoans,
+  type LoanSummary,
+  type CreateUserInput,
+  type UserSearchCriteria,
+  type UserApiError,
+} from './user-api';
