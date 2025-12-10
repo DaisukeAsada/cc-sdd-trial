@@ -115,6 +115,9 @@ function createMockReservationRepository(
     findByUserId: (): Promise<Reservation[]> => {
       return Promise.resolve([]);
     },
+    findExpiredReservations: (): Promise<Reservation[]> => {
+      return Promise.resolve([]);
+    },
     ...overrides,
   };
 }
@@ -348,6 +351,271 @@ describe('ReservationService', () => {
 
       // Assert
       expect(isOk(result)).toBe(true);
+    });
+  });
+
+  describe('processReturnedBook', () => {
+    it('予約がある書籍が返却された時、先頭の予約者に通知フラグが設定される', async () => {
+      // Arrange
+      const firstReservation = createMockReservation({
+        id: createReservationId('reservation-1'),
+        userId: createUserId('user-1'),
+        bookId: createBookId('book-1'),
+        queuePosition: 1,
+        status: 'PENDING',
+      });
+      const secondReservation = createMockReservation({
+        id: createReservationId('reservation-2'),
+        userId: createUserId('user-2'),
+        bookId: createBookId('book-1'),
+        queuePosition: 2,
+        status: 'PENDING',
+      });
+
+      reservationRepo = createMockReservationRepository({
+        findActiveByBookId: () => Promise.resolve([firstReservation, secondReservation]),
+        updateStatus: (id, status, notifiedAt, expiresAt) => {
+          return Promise.resolve(
+            ok(
+              createMockReservation({
+                id,
+                status,
+                notifiedAt: notifiedAt ?? null,
+                expiresAt: expiresAt ?? null,
+              })
+            )
+          );
+        },
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.processReturnedBook(createBookId('book-1'));
+
+      // Assert
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.notifiedReservation).toBeDefined();
+        expect(result.value.notifiedReservation?.id).toBe('reservation-1');
+        expect(result.value.notifiedReservation?.status).toBe('NOTIFIED');
+      }
+    });
+
+    it('予約がない書籍が返却された場合、通知対象なしを返す', async () => {
+      // Arrange
+      reservationRepo = createMockReservationRepository({
+        findActiveByBookId: () => Promise.resolve([]),
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.processReturnedBook(createBookId('book-1'));
+
+      // Assert
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.notifiedReservation).toBeNull();
+      }
+    });
+
+    it('通知時に予約有効期限が7日後に設定される', async () => {
+      // Arrange
+      const reservation = createMockReservation({
+        id: createReservationId('reservation-1'),
+        status: 'PENDING',
+      });
+
+      let capturedExpiresAt: Date | undefined;
+      reservationRepo = createMockReservationRepository({
+        findActiveByBookId: () => Promise.resolve([reservation]),
+        updateStatus: (_id, _status, _notifiedAt, expiresAt) => {
+          capturedExpiresAt = expiresAt;
+          return Promise.resolve(
+            ok(
+              createMockReservation({
+                status: 'NOTIFIED',
+                notifiedAt: new Date(),
+                expiresAt: expiresAt ?? null,
+              })
+            )
+          );
+        },
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const now = new Date();
+      await service.processReturnedBook(createBookId('book-1'));
+
+      // Assert
+      expect(capturedExpiresAt).toBeDefined();
+      if (capturedExpiresAt) {
+        const daysDiff = Math.round(
+          (capturedExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        expect(daysDiff).toBe(7);
+      }
+    });
+  });
+
+  describe('expireOverdueReservations', () => {
+    it('有効期限切れの予約をEXPIREDステータスに更新する', async () => {
+      // Arrange
+      const expiredReservation = createMockReservation({
+        id: createReservationId('reservation-1'),
+        status: 'NOTIFIED',
+        expiresAt: new Date('2024-01-01'), // 過去の日付
+      });
+
+      const updatedIds: string[] = [];
+      reservationRepo = createMockReservationRepository({
+        findExpiredReservations: () => Promise.resolve([expiredReservation]),
+        updateStatus: (id, status) => {
+          updatedIds.push(id);
+          return Promise.resolve(
+            ok(
+              createMockReservation({
+                id,
+                status,
+              })
+            )
+          );
+        },
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.expireOverdueReservations();
+
+      // Assert
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.expiredCount).toBe(1);
+        expect(updatedIds).toContain('reservation-1');
+      }
+    });
+
+    it('期限切れ予約がない場合、expiredCount=0を返す', async () => {
+      // Arrange
+      reservationRepo = createMockReservationRepository({
+        findExpiredReservations: () => Promise.resolve([]),
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.expireOverdueReservations();
+
+      // Assert
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.expiredCount).toBe(0);
+      }
+    });
+
+    it('期限切れ予約後、次順位の予約者に通知トリガーが発生する', async () => {
+      // Arrange
+      const expiredReservation = createMockReservation({
+        id: createReservationId('reservation-1'),
+        userId: createUserId('user-1'),
+        bookId: createBookId('book-1'),
+        status: 'NOTIFIED',
+        expiresAt: new Date('2024-01-01'),
+        queuePosition: 1,
+      });
+      const nextReservation = createMockReservation({
+        id: createReservationId('reservation-2'),
+        userId: createUserId('user-2'),
+        bookId: createBookId('book-1'),
+        status: 'PENDING',
+        queuePosition: 2,
+      });
+
+      const notifiedIds: string[] = [];
+      reservationRepo = createMockReservationRepository({
+        findExpiredReservations: () => Promise.resolve([expiredReservation]),
+        findActiveByBookId: (bookId) => {
+          if (bookId === 'book-1') {
+            return Promise.resolve([nextReservation]);
+          }
+          return Promise.resolve([]);
+        },
+        updateStatus: (id, status) => {
+          if (status === 'NOTIFIED') {
+            notifiedIds.push(id);
+          }
+          return Promise.resolve(
+            ok(
+              createMockReservation({
+                id,
+                status,
+              })
+            )
+          );
+        },
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.expireOverdueReservations();
+
+      // Assert
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.expiredCount).toBe(1);
+        expect(result.value.nextNotifiedReservations).toHaveLength(1);
+        expect(notifiedIds).toContain('reservation-2');
+      }
+    });
+  });
+
+  describe('cancelReservation', () => {
+    it('予約をキャンセルしてCANCELLEDステータスに更新できる', async () => {
+      // Arrange
+      const reservation = createMockReservation({
+        id: createReservationId('reservation-1'),
+        status: 'PENDING',
+      });
+
+      reservationRepo = createMockReservationRepository({
+        findById: () => Promise.resolve(ok(reservation)),
+        updateStatus: (id, status) => {
+          return Promise.resolve(
+            ok(
+              createMockReservation({
+                id,
+                status,
+              })
+            )
+          );
+        },
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.cancelReservation(createReservationId('reservation-1'));
+
+      // Assert
+      expect(isOk(result)).toBe(true);
+    });
+
+    it('存在しない予約をキャンセルしようとするとエラーを返す', async () => {
+      // Arrange
+      reservationRepo = createMockReservationRepository({
+        findById: () =>
+          Promise.resolve(
+            err({ type: 'RESERVATION_NOT_FOUND' as const, reservationId: 'reservation-999' })
+          ),
+      });
+      service = createReservationService(reservationRepo, bookRepo, userRepo);
+
+      // Act
+      const result = await service.cancelReservation(createReservationId('reservation-999'));
+
+      // Assert
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.type).toBe('RESERVATION_NOT_FOUND');
+      }
     });
   });
 });

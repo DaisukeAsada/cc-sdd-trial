@@ -81,4 +81,10 @@ export interface ReservationRepository {
    * @returns ユーザーの予約一覧
    */
   findByUserId(userId: UserId): Promise<Reservation[]>;
+
+  /**
+   * 有効期限切れの予約一覧を取得（NOTIFIED状態で期限切れ）
+   * @returns 有効期限切れの予約一覧
+   */
+  findExpiredReservations(): Promise<Reservation[]>;
 }
