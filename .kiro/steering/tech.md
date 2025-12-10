@@ -16,11 +16,14 @@
 - **Runtime**: Node.js 20+
 - **Framework**: Express 5.x
 - **Database**: PostgreSQL（pg ライブラリ）
+- **Message Queue**: Redis + BullMQ（非同期ジョブ処理）
 
 ## Key Libraries
 
 - **pg**: PostgreSQL クライアント
 - **express**: Web フレームワーク
+- **bullmq**: ジョブキュー（Redis ベース）
+- **ioredis**: Redis クライアント
 - **vitest**: テストフレームワーク
 - **eslint + prettier**: コード品質・フォーマット
 
@@ -65,6 +68,8 @@
 2. **Branded Types**: `BookId`, `UserId` 等でプリミティブ型の誤用を防止
 3. **依存性注入**: ファクトリ関数で依存関係を注入（`createBookService(repo)`）
 4. **インターフェース分離**: Repository はドメイン層でインターフェース定義、Infrastructure で実装
+5. **非同期ジョブキュー**: BullMQ + Redis で通知等の非同期処理を実現
 
 ---
 _Document standards and patterns, not every dependency_
+_Updated: 2025-12-10 - Added BullMQ/Redis job queue pattern_

@@ -9,6 +9,7 @@
 3. **予約管理**: 蔵書の予約受付・管理
 4. **利用者管理**: 図書館利用者の登録・管理
 5. **レポート**: 蔵書・貸出状況の統計・レポート生成
+6. **通知管理**: 予約書籍の貸出可能通知、延滞リマインダー（非同期ジョブキュー）
 
 ## Target Use Cases
 
@@ -26,3 +27,4 @@
 
 ---
 _Focus on patterns and purpose, not exhaustive feature lists_
+_Updated: 2025-12-10 - Added notification domain capability_
