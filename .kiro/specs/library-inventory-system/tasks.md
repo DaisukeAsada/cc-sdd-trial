@@ -145,7 +145,7 @@
   - 期限切れ予約のキャンセルと次順位者への通知
   - _Requirements: 6.2, 6.4_
 
-- [ ] 7.3 予約 REST API エンドポイント
+- [x] 7.3 予約 REST API エンドポイント
   - POST /api/reservations - 予約作成
   - DELETE /api/reservations/:id - 予約キャンセル
   - GET /api/users/:id/reservations - 利用者の予約一覧

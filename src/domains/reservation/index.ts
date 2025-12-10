@@ -14,3 +14,6 @@ export { createReservationService } from './reservation-service.js';
 
 // Repository
 export type { ReservationRepository } from './reservation-repository.js';
+
+// Controller
+export { createReservationController } from './reservation-controller.js';
