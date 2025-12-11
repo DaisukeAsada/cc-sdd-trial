@@ -71,26 +71,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * サニタイズ対象の値を処理
- */
-function sanitizeValue(value: unknown): unknown {
-  if (typeof value === 'string') {
-    // NULLバイトを除去し、前後の空白をトリム
-    const nullByteRegex = new RegExp(String.fromCharCode(0), 'g');
-    return value.replace(nullByteRegex, '').trim();
-  }
-  if (isRecord(value)) {
-    return sanitizeObject(value);
-  }
-  return value;
-}
-
-/**
  * リクエストの入力をサニタイズするミドルウェア
  *
  * サニタイズ対象:
  * - req.body: リクエストボディ
- * 
+ *
  * Note: Express 5.x では req.query と req.params は読み取り専用のため、
  * body のみをサニタイズします。query/params のサニタイズが必要な場合は、
  * 各ルートハンドラ内で個別に処理してください。

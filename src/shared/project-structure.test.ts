@@ -39,8 +39,8 @@ describe('Configuration Files', () => {
     expect(fs.existsSync(path.join(rootPath, 'tsconfig.json'))).toBe(true);
   });
 
-  it('should have docker-compose.yml', () => {
-    expect(fs.existsSync(path.join(rootPath, 'docker-compose.yml'))).toBe(true);
+  it('should have docker-compose.yml in .devcontainer', () => {
+    expect(fs.existsSync(path.join(rootPath, '.devcontainer/docker-compose.yml'))).toBe(true);
   });
 
   it('should have ESLint config', () => {
