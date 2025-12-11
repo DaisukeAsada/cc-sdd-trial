@@ -49,11 +49,11 @@ app.use(sanitizeInputMiddleware);
 // ============================================
 
 const dbConfig = createDatabaseConfig({
-  host: process.env.DB_HOST ?? 'localhost',
-  port: parseInt(process.env.DB_PORT ?? '5432', 10),
-  database: process.env.DB_NAME ?? 'library_db',
-  user: process.env.DB_USER ?? 'library_user',
-  password: process.env.DB_PASSWORD ?? 'library_password',
+  host: process.env.POSTGRES_HOST ?? 'postgres',
+  port: parseInt(process.env.POSTGRES_PORT ?? '5432', 10),
+  database: process.env.POSTGRES_DB ?? 'library_db',
+  user: process.env.POSTGRES_USER ?? 'library_user',
+  password: process.env.POSTGRES_PASSWORD ?? 'library_password',
 });
 
 const pool = new DatabasePool(dbConfig);
