@@ -37,3 +37,27 @@ export {
 // Validation（バリデーション）
 // ============================================
 export { ValidationError, validateISBN, validateRequired } from './validation.js';
+
+// ============================================
+// Security（セキュリティ）
+// ============================================
+export {
+  SecurityValidationError,
+  SanitizeOptions,
+  PositiveIntegerOptions,
+  StringLengthOptions,
+  sanitizeString,
+  sanitizeObject,
+  validateUUID,
+  validatePositiveInteger,
+  validateStringLength,
+} from './security.js';
+
+export {
+  BuiltQuery,
+  QueryBuilder,
+  securityHeadersMiddleware,
+  sanitizeInputMiddleware,
+  validateRequestParams,
+  createQueryBuilder,
+} from './security-middleware.js';
