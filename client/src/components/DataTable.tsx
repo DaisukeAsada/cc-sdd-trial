@@ -86,6 +86,9 @@ export function DataTable<T>({
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  // data が配列でない場合は空配列として扱う
+  const safeData = Array.isArray(data) ? data : [];
+
   // ローディング中
   if (loading) {
     return (
@@ -97,7 +100,7 @@ export function DataTable<T>({
   }
 
   // データが空の場合
-  if (data.length === 0) {
+  if (safeData.length === 0) {
     return (
       <div className={`data-table-container ${className}`}>
         <table className="data-table" aria-label={ariaLabel}>
@@ -151,7 +154,7 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {data.map((item) => (
+          {safeData.map((item) => (
             <tr
               key={String(item[keyField])}
               className={`data-table-row ${onRowClick !== undefined ? 'data-table-row-clickable' : ''}`}
